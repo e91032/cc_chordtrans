@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>和弦升 Key / 降 Key 工具</title>
+  <title>和弦工具 by YaoCC</title>
 
   <style>
     body {
@@ -15,7 +15,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 920px;
       margin: 0 auto;
       background: #ffffff;
       padding: 28px;
@@ -30,6 +30,47 @@
       letter-spacing: 1px;
     }
 
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0 24px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: #e5e7eb;
+      color: #333;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .tab-btn.active {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .desc {
+      text-align: center;
+      color: #666;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
     label {
       font-weight: bold;
       display: block;
@@ -37,20 +78,23 @@
       font-size: 17px;
     }
 
-    textarea {
+    textarea, input {
       width: 100%;
-      min-height: 150px;
-      font-size: 22px;
-      padding: 16px;
+      font-size: 21px;
+      padding: 15px;
       box-sizing: border-box;
       border-radius: 14px;
       border: 1px solid #ccc;
-      resize: vertical;
       font-family: Consolas, "Courier New", monospace;
       line-height: 1.5;
     }
 
-    textarea:focus {
+    textarea {
+      min-height: 145px;
+      resize: vertical;
+    }
+
+    textarea:focus, input:focus {
       outline: none;
       border-color: #2563eb;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
@@ -117,12 +161,58 @@
       gap: 4px;
     }
 
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .option-box {
+      margin: 16px 0;
+      background: #f8f8f8;
+      padding: 14px;
+      border-radius: 14px;
+      line-height: 1.7;
+      color: #444;
+    }
+
+    .option-box label {
+      margin: 0;
+      font-weight: normal;
+      font-size: 15px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .result {
+      margin-top: 22px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 20px;
+      line-height: 1.9;
+      font-size: 18px;
+      min-height: 120px;
+      white-space: pre-line;
+    }
+
+    .result strong {
+      color: #111827;
+    }
+
+    .highlight {
+      font-size: 24px;
+      color: #2563eb;
+      font-weight: bold;
+    }
+
     .example {
       margin-top: 18px;
       color: #666;
       font-size: 15px;
       text-align: center;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
     .note {
@@ -130,9 +220,20 @@
       color: #888;
       font-size: 13px;
       text-align: center;
+      line-height: 1.6;
     }
 
-    @media (max-width: 600px) {
+    .footer {
+      margin-top: 24px;
+      padding-top: 14px;
+      border-top: 1px solid #e5e5e5;
+      text-align: center;
+      color: #888;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+
+    @media (max-width: 640px) {
       body {
         padding: 12px;
       }
@@ -146,8 +247,15 @@
         font-size: 23px;
       }
 
-      textarea {
+      .tabs {
+        flex-direction: column;
+      }
+
+      textarea, input {
         font-size: 20px;
+      }
+
+      textarea {
         min-height: 130px;
       }
 
@@ -164,6 +272,15 @@
       .radio-group {
         justify-content: center;
       }
+
+      .row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .result {
+        font-size: 17px;
+      }
     }
   </style>
 </head>
@@ -171,75 +288,124 @@
 <body>
 
   <div class="container">
-    <h1>和弦升 Key / 降 Key 工具</h1>
+    <h1>和弦工具</h1>
 
-    <label for="inputChords">輸入原始和弦：</label>
-    <textarea id="inputChords" placeholder="例如：C G Am F&#10;或：Cdim7 F#m7b5 G7sus4 Cmaj9"></textarea>
+    <div class="tabs">
+      <button class="tab-btn active" id="tabChordBtn" type="button">和弦升降 Key</button>
+      <button class="tab-btn" id="tabKeyBtn" type="button">計算兩調差幾 Key</button>
+    </div>
 
-    <div class="controls">
-      <span class="small-title">升降半音：</span>
+    <!-- 頁籤 1：和弦升降 Key -->
+    <div class="tab-content active" id="tabChord">
+      <label for="inputChords">輸入原始和弦：</label>
+      <textarea id="inputChords" placeholder="例如：C G Am F&#10;或：Cdim7 F#m7b5 G7sus4 Cmaj9"></textarea>
 
-      <select id="steps">
-        <option value="-12">降 12</option>
-        <option value="-11">降 11</option>
-        <option value="-10">降 10</option>
-        <option value="-9">降 9</option>
-        <option value="-8">降 8</option>
-        <option value="-7">降 7</option>
-        <option value="-6">降 6</option>
-        <option value="-5">降 5</option>
-        <option value="-4">降 4</option>
-        <option value="-3">降 3</option>
-        <option value="-2">降 2</option>
-        <option value="-1">降 1</option>
-        <option value="0">不變</option>
-        <option value="1">升 1</option>
-        <option value="2" selected>升 2</option>
-        <option value="3">升 3</option>
-        <option value="4">升 4</option>
-        <option value="5">升 5</option>
-        <option value="6">升 6</option>
-        <option value="7">升 7</option>
-        <option value="8">升 8</option>
-        <option value="9">升 9</option>
-        <option value="10">升 10</option>
-        <option value="11">升 11</option>
-        <option value="12">升 12</option>
-      </select>
+      <div class="controls">
+        <span class="small-title">升降半音：</span>
 
-      <div class="radio-group">
+        <select id="steps">
+          <option value="-12">降 12</option>
+          <option value="-11">降 11</option>
+          <option value="-10">降 10</option>
+          <option value="-9">降 9</option>
+          <option value="-8">降 8</option>
+          <option value="-7">降 7</option>
+          <option value="-6">降 6</option>
+          <option value="-5">降 5</option>
+          <option value="-4">降 4</option>
+          <option value="-3">降 3</option>
+          <option value="-2">降 2</option>
+          <option value="-1">降 1</option>
+          <option value="0">不變</option>
+          <option value="1">升 1</option>
+          <option value="2" selected>升 2</option>
+          <option value="3">升 3</option>
+          <option value="4">升 4</option>
+          <option value="5">升 5</option>
+          <option value="6">升 6</option>
+          <option value="7">升 7</option>
+          <option value="8">升 8</option>
+          <option value="9">升 9</option>
+          <option value="10">升 10</option>
+          <option value="11">升 11</option>
+          <option value="12">升 12</option>
+        </select>
+
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="accidental" value="sharp" checked>
+            使用升記號 #
+          </label>
+
+          <label>
+            <input type="radio" name="accidental" value="flat">
+            使用降記號 b
+          </label>
+        </div>
+
+        <button id="convertBtn" type="button">轉換</button>
+        <button id="copyChordBtn" class="secondary" type="button">複製結果</button>
+        <button id="clearChordBtn" class="clear" type="button">清空</button>
+      </div>
+
+      <label for="outputChords">轉換後和弦：</label>
+      <textarea id="outputChords" readonly></textarea>
+
+      <div class="example">
+        範例：C G Am F → 升 2 半音 → D A Bm G<br>
+        範例：Cdim7 → 升 2 半音 → Ddim7
+      </div>
+
+      <div class="note">
+        支援：C、Cm、C7、Cmaj7、Cdim7、Cm7b5、Csus4、Cadd9、G/B 等常見和弦
+      </div>
+    </div>
+
+    <!-- 頁籤 2：計算兩調差幾 Key -->
+    <div class="tab-content" id="tabKey">
+      <div class="desc">
+        輸入兩個調性，工具會自動用「關係大小調」換算後，計算兩個調差幾個 Key。<br>
+        例如：Cm 會先換算成 Eb，再去算 Eb 到 Db 是 -2。
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="fromKey">原本的調：</label>
+          <input id="fromKey" placeholder="例如：Cm、G、Eb、F#m">
+        </div>
+
+        <div>
+          <label for="toKey">目標的調：</label>
+          <input id="toKey" placeholder="例如：Db、E、A、Bm">
+        </div>
+      </div>
+
+      <div class="option-box">
         <label>
-          <input type="radio" name="accidental" value="sharp" checked>
-          使用升記號 #
-        </label>
-
-        <label>
-          <input type="radio" name="accidental" value="flat">
-          使用降記號 b
+          <input type="checkbox" id="useRelative" checked>
+          小調自動換算成關係大調，例如 Cm = Eb、Am = C、F#m = A
         </label>
       </div>
 
-      <button id="convertBtn" type="button">轉換</button>
-      <button id="copyBtn" class="secondary" type="button">複製結果</button>
-      <button id="clearBtn" class="clear" type="button">清空</button>
-    </div>
+      <div class="controls">
+        <button id="calcKeyBtn" type="button">計算差幾個 Key</button>
+        <button id="copyKeyBtn" class="secondary" type="button">複製結果</button>
+        <button id="clearKeyBtn" class="clear" type="button">清空</button>
+      </div>
 
-    <label for="outputChords">轉換後和弦：</label>
-    <textarea id="outputChords" readonly></textarea>
+      <div class="result" id="resultBox">
+        請輸入兩個調性後按「計算差幾個 Key」。
+      </div>
 
-    <div class="example">
-      範例：C G Am F → 升 2 半音 → D A Bm G<br>
-      範例：Cdim7 → 升 2 半音 → Ddim7
-    </div>
-
-    <div class="note">
-      支援：C、Cm、C7、Cmaj7、Cdim7、Cm7b5、Csus4、Cadd9、G/B 等常見和弦
+      <div class="example">
+        範例 1：Cm → Db，因為 Cm = Eb，所以 Eb → D → Db = -2<br>
+        範例 2：G → E，所以 G → Gb → F → E = -3
+      </div>
     </div>
 
     <div class="footer">
       網站 by YaoCC
     </div>
-
   </div>
 
   <script>
@@ -273,6 +439,78 @@
       "B": 11
     };
 
+    /* -------------------------
+       共用功能
+    ------------------------- */
+
+    function noteName(index, preferFlat) {
+      const safeIndex = ((index % 12) + 12) % 12;
+      return preferFlat ? flatNotes[safeIndex] : sharpNotes[safeIndex];
+    }
+
+    function shouldPreferFlat(note) {
+      return note.includes("b");
+    }
+
+    function fallbackCopy(text) {
+      const temp = document.createElement("textarea");
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.focus();
+      temp.select();
+      temp.setSelectionRange(0, temp.value.length);
+
+      try {
+        const successful = document.execCommand("copy");
+        if (successful) {
+          alert("已複製結果");
+        } else {
+          alert("複製失敗，請手動長按選取複製");
+        }
+      } catch (err) {
+        alert("複製失敗，請手動長按選取複製");
+      }
+
+      document.body.removeChild(temp);
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function() {
+          alert("已複製結果");
+        }).catch(function() {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function switchTab(targetTab) {
+      const tabChord = document.getElementById("tabChord");
+      const tabKey = document.getElementById("tabKey");
+      const tabChordBtn = document.getElementById("tabChordBtn");
+      const tabKeyBtn = document.getElementById("tabKeyBtn");
+
+      if (targetTab === "chord") {
+        tabChord.classList.add("active");
+        tabKey.classList.remove("active");
+
+        tabChordBtn.classList.add("active");
+        tabKeyBtn.classList.remove("active");
+      } else {
+        tabKey.classList.add("active");
+        tabChord.classList.remove("active");
+
+        tabKeyBtn.classList.add("active");
+        tabChordBtn.classList.remove("active");
+      }
+    }
+
+    /* -------------------------
+       頁籤 1：和弦升降 Key
+    ------------------------- */
+
     function transposeNote(note, steps, preferFlat) {
       if (!(note in noteMap)) {
         return note;
@@ -281,11 +519,7 @@
       const index = noteMap[note];
       const newIndex = (index + steps + 120) % 12;
 
-      if (preferFlat) {
-        return flatNotes[newIndex];
-      } else {
-        return sharpNotes[newIndex];
-      }
+      return preferFlat ? flatNotes[newIndex] : sharpNotes[newIndex];
     }
 
     function transposeChord(chord, steps, preferFlat) {
@@ -293,7 +527,6 @@
         return chord;
       }
 
-      // 處理斜線和弦，例如 G/B、D/F#
       if (chord.includes("/")) {
         const parts = chord.split("/");
         const mainChord = parts[0];
@@ -302,7 +535,6 @@
         return transposeChord(mainChord, steps, preferFlat) + "/" + transposeChord(bassNote, steps, preferFlat);
       }
 
-      // 抓根音：A-G，可接 # 或 b
       const match = chord.match(/^([A-G](?:#|b)?)(.*)$/);
 
       if (!match) {
@@ -318,22 +550,6 @@
     }
 
     function transposeText(text, steps, preferFlat) {
-      /*
-        支援常見和弦：
-        C
-        Cm
-        C7
-        Cmaj7
-        Cmaj9
-        Cdim
-        Cdim7
-        Cm7b5
-        Caug
-        Csus4
-        Cadd9
-        G/B
-      */
-
       const chordPattern = /\b[A-G](?:#|b)?(?:maj13|maj11|maj9|maj7|maj|min13|min11|min9|min7|min|m13|m11|m9|m7b5|m7|m6|m|dim7|dim|aug7|aug|sus2|sus4|sus|add9|add11|add13|7sus4|7sus2|13|11|9|7|6|5|4|2)?(?:\/[A-G](?:#|b)?)?\b/g;
 
       return text.replace(chordPattern, function(chord) {
@@ -362,57 +578,243 @@
       outputBox.value = result;
     }
 
-    function copyResult() {
-      const outputBox = document.getElementById("outputChords");
-      const output = outputBox.value;
+    function copyChordResult() {
+      const output = document.getElementById("outputChords").value;
 
       if (!output.trim()) {
         alert("目前沒有轉換結果");
         return;
       }
 
-      // 現代瀏覽器
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(output).then(function() {
-          alert("已複製結果");
-        }).catch(function() {
-          fallbackCopy(outputBox);
-        });
-      } else {
-        fallbackCopy(outputBox);
-      }
+      copyText(output);
     }
 
-    function fallbackCopy(outputBox) {
-      outputBox.removeAttribute("readonly");
-      outputBox.focus();
-      outputBox.select();
-      outputBox.setSelectionRange(0, outputBox.value.length);
-
-      try {
-        const successful = document.execCommand("copy");
-        if (successful) {
-          alert("已複製結果");
-        } else {
-          alert("複製失敗，請手動長按選取複製");
-        }
-      } catch (err) {
-        alert("複製失敗，請手動長按選取複製");
-      }
-
-      outputBox.setAttribute("readonly", true);
-    }
-
-    function clearAll() {
+    function clearChordTool() {
       document.getElementById("inputChords").value = "";
       document.getElementById("outputChords").value = "";
     }
 
-    // iPhone / Safari 比較穩的按鈕事件綁定方式
+    /* -------------------------
+       頁籤 2：計算兩調差幾 Key
+    ------------------------- */
+
+    function cleanInput(text) {
+      return text
+        .trim()
+        .replace(/♯/g, "#")
+        .replace(/＃/g, "#")
+        .replace(/♭/g, "b")
+        .replace(/小調/g, "m")
+        .replace(/minor/gi, "m")
+        .replace(/major/gi, "")
+        .replace(/大調/g, "")
+        .replace(/\s+/g, "");
+    }
+
+    function parseKey(input) {
+      const cleaned = cleanInput(input);
+
+      if (!cleaned) {
+        return null;
+      }
+
+      const match = cleaned.match(/^([A-Ga-g])(#|b)?(m)?$/);
+
+      if (!match) {
+        return null;
+      }
+
+      let root = match[1].toUpperCase();
+      let accidental = match[2] || "";
+      let isMinor = !!match[3];
+
+      const note = root + accidental;
+
+      if (!(note in noteMap)) {
+        return null;
+      }
+
+      return {
+        original: input.trim(),
+        note: note,
+        index: noteMap[note],
+        isMinor: isMinor
+      };
+    }
+
+    function normalizeKey(key, useRelative) {
+      let normalizedIndex = key.index;
+      let explanation = "";
+
+      if (useRelative && key.isMinor) {
+        normalizedIndex = (key.index + 3) % 12;
+        const preferFlat = shouldPreferFlat(key.note) || flatNotes[normalizedIndex].includes("b");
+        const relativeMajor = noteName(normalizedIndex, preferFlat);
+
+        explanation = `${key.note}m = ${relativeMajor}`;
+      } else {
+        const preferFlat = shouldPreferFlat(key.note);
+        const majorName = noteName(normalizedIndex, preferFlat);
+        explanation = key.isMinor ? `${key.note}m` : `${majorName}`;
+      }
+
+      return {
+        index: normalizedIndex,
+        explanation: explanation
+      };
+    }
+
+    function getDownDistance(fromIndex, toIndex) {
+      let distance = fromIndex - toIndex;
+      if (distance < 0) {
+        distance += 12;
+      }
+      return -distance;
+    }
+
+    function getUpDistance(fromIndex, toIndex) {
+      let distance = toIndex - fromIndex;
+      if (distance < 0) {
+        distance += 12;
+      }
+      return distance;
+    }
+
+    function getBestDistance(fromIndex, toIndex) {
+      const up = getUpDistance(fromIndex, toIndex);
+      const down = getDownDistance(fromIndex, toIndex);
+
+      if (Math.abs(down) <= Math.abs(up)) {
+        return down;
+      } else {
+        return up;
+      }
+    }
+
+    function buildPath(fromIndex, steps, preferFlat) {
+      let path = [];
+      let current = fromIndex;
+
+      path.push(noteName(current, preferFlat));
+
+      if (steps > 0) {
+        for (let i = 0; i < steps; i++) {
+          current = (current + 1) % 12;
+          path.push(noteName(current, preferFlat));
+        }
+      } else if (steps < 0) {
+        for (let i = 0; i < Math.abs(steps); i++) {
+          current = (current - 1 + 12) % 12;
+          path.push(noteName(current, preferFlat));
+        }
+      }
+
+      return path.join(" → ");
+    }
+
+    function calculateKeyDistance() {
+      const fromInput = document.getElementById("fromKey").value;
+      const toInput = document.getElementById("toKey").value;
+      const useRelative = document.getElementById("useRelative").checked;
+      const resultBox = document.getElementById("resultBox");
+
+      const fromKey = parseKey(fromInput);
+      const toKey = parseKey(toInput);
+
+      if (!fromKey || !toKey) {
+        resultBox.innerHTML = "請確認輸入格式，例如：C、Cm、C#、F#m、Eb、Bbm。";
+        return;
+      }
+
+      const fromNormalized = normalizeKey(fromKey, useRelative);
+      const toNormalized = normalizeKey(toKey, useRelative);
+
+      const up = getUpDistance(fromNormalized.index, toNormalized.index);
+      const down = getDownDistance(fromNormalized.index, toNormalized.index);
+      const best = getBestDistance(fromNormalized.index, toNormalized.index);
+
+      const preferFlat = shouldPreferFlat(fromKey.note) || shouldPreferFlat(toKey.note) || best < 0;
+      const bestPath = buildPath(fromNormalized.index, best, preferFlat);
+      const upPath = buildPath(fromNormalized.index, up, preferFlat);
+      const downPath = buildPath(fromNormalized.index, down, preferFlat);
+
+      let bestText = "";
+      if (best > 0) {
+        bestText = `升 ${best} 個 Key`;
+      } else if (best < 0) {
+        bestText = `降 ${Math.abs(best)} 個 Key`;
+      } else {
+        bestText = "不用升降 Key";
+      }
+
+      resultBox.innerHTML =
+        `<strong>原本調性：</strong>${fromKey.original}<br>` +
+        `<strong>換算後：</strong>${fromNormalized.explanation}<br><br>` +
+
+        `<strong>目標調性：</strong>${toKey.original}<br>` +
+        `<strong>換算後：</strong>${toNormalized.explanation}<br><br>` +
+
+        `<strong>最短推算：</strong><span class="highlight">${best > 0 ? "+" + best : best}</span><br>` +
+        `<strong>意思是：</strong>${bestText}<br>` +
+        `<strong>推算路徑：</strong>${bestPath}<br><br>` +
+
+        `<strong>如果往上算：</strong>+${up}<br>` +
+        `<strong>路徑：</strong>${upPath}<br><br>` +
+
+        `<strong>如果往下算：</strong>${down}<br>` +
+        `<strong>路徑：</strong>${downPath}`;
+    }
+
+    function copyKeyResult() {
+      const resultBox = document.getElementById("resultBox");
+      const text = resultBox.innerText || resultBox.textContent;
+
+      if (!text.trim() || text.includes("請輸入兩個調性")) {
+        alert("目前沒有可複製的結果");
+        return;
+      }
+
+      copyText(text);
+    }
+
+    function clearKeyTool() {
+      document.getElementById("fromKey").value = "";
+      document.getElementById("toKey").value = "";
+      document.getElementById("resultBox").innerHTML = "請輸入兩個調性後按「計算差幾個 Key」。";
+    }
+
+    /* -------------------------
+       事件綁定
+    ------------------------- */
+
     document.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("tabChordBtn").addEventListener("click", function() {
+        switchTab("chord");
+      });
+
+      document.getElementById("tabKeyBtn").addEventListener("click", function() {
+        switchTab("key");
+      });
+
       document.getElementById("convertBtn").addEventListener("click", convertChords);
-      document.getElementById("copyBtn").addEventListener("click", copyResult);
-      document.getElementById("clearBtn").addEventListener("click", clearAll);
+      document.getElementById("copyChordBtn").addEventListener("click", copyChordResult);
+      document.getElementById("clearChordBtn").addEventListener("click", clearChordTool);
+
+      document.getElementById("calcKeyBtn").addEventListener("click", calculateKeyDistance);
+      document.getElementById("copyKeyBtn").addEventListener("click", copyKeyResult);
+      document.getElementById("clearKeyBtn").addEventListener("click", clearKeyTool);
+
+      document.getElementById("fromKey").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          calculateKeyDistance();
+        }
+      });
+
+      document.getElementById("toKey").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          calculateKeyDistance();
+        }
+      });
     });
   </script>
 
