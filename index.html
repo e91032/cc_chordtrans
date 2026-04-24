@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>和弦升 Key / 降 Key 工具</title>
+
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", "PingFang TC", Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 24px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+      font-size: 28px;
+      letter-spacing: 1px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 16px 0 8px;
+      font-size: 17px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      font-size: 22px;
+      padding: 16px;
+      box-sizing: border-box;
+      border-radius: 14px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      font-family: Consolas, "Courier New", monospace;
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin: 20px 0;
+    }
+
+    .small-title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    select {
+      font-size: 16px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #bbb;
+      background: white;
+    }
+
+    button {
+      font-size: 16px;
+      padding: 11px 18px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      touch-action: manipulation;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button.secondary {
+      background: #555;
+    }
+
+    button.clear {
+      background: #999;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .radio-group label {
+      margin: 0;
+      font-weight: normal;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .example {
+      margin-top: 18px;
+      color: #666;
+      font-size: 15px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .note {
+      margin-top: 10px;
+      color: #888;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      .container {
+        padding: 18px;
+        border-radius: 16px;
+      }
+
+      h1 {
+        font-size: 23px;
+      }
+
+      textarea {
+        font-size: 20px;
+        min-height: 130px;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      button, select {
+        width: 100%;
+        font-size: 17px;
+      }
+
+      .radio-group {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>和弦升 Key / 降 Key 工具</h1>
+
+    <label for="inputChords">輸入原始和弦：</label>
+    <textarea id="inputChords" placeholder="例如：C G Am F&#10;或：Cdim7 F#m7b5 G7sus4 Cmaj9"></textarea>
+
+    <div class="controls">
+      <span class="small-title">升降半音：</span>
+
+      <select id="steps">
+        <option value="-12">降 12</option>
+        <option value="-11">降 11</option>
+        <option value="-10">降 10</option>
+        <option value="-9">降 9</option>
+        <option value="-8">降 8</option>
+        <option value="-7">降 7</option>
+        <option value="-6">降 6</option>
+        <option value="-5">降 5</option>
+        <option value="-4">降 4</option>
+        <option value="-3">降 3</option>
+        <option value="-2">降 2</option>
+        <option value="-1">降 1</option>
+        <option value="0">不變</option>
+        <option value="1">升 1</option>
+        <option value="2" selected>升 2</option>
+        <option value="3">升 3</option>
+        <option value="4">升 4</option>
+        <option value="5">升 5</option>
+        <option value="6">升 6</option>
+        <option value="7">升 7</option>
+        <option value="8">升 8</option>
+        <option value="9">升 9</option>
+        <option value="10">升 10</option>
+        <option value="11">升 11</option>
+        <option value="12">升 12</option>
+      </select>
+
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="accidental" value="sharp" checked>
+          使用升記號 #
+        </label>
+
+        <label>
+          <input type="radio" name="accidental" value="flat">
+          使用降記號 b
+        </label>
+      </div>
+
+      <button id="convertBtn" type="button">轉換</button>
+      <button id="copyBtn" class="secondary" type="button">複製結果</button>
+      <button id="clearBtn" class="clear" type="button">清空</button>
+    </div>
+
+    <label for="outputChords">轉換後和弦：</label>
+    <textarea id="outputChords" readonly></textarea>
+
+    <div class="example">
+      範例：C G Am F → 升 2 半音 → D A Bm G<br>
+      範例：Cdim7 → 升 2 半音 → Ddim7
+    </div>
+
+    <div class="note">
+      支援：C、Cm、C7、Cmaj7、Cdim7、Cm7b5、Csus4、Cadd9、G/B 等常見和弦
+    </div>
+
+    <div class="footer">
+      網站 by YaoCC
+    </div>
+
+  </div>
+
+  <script>
+    const sharpNotes = [
+      "C", "C#", "D", "D#", "E", "F",
+      "F#", "G", "G#", "A", "A#", "B"
+    ];
+
+    const flatNotes = [
+      "C", "Db", "D", "Eb", "E", "F",
+      "Gb", "G", "Ab", "A", "Bb", "B"
+    ];
+
+    const noteMap = {
+      "C": 0,
+      "C#": 1,
+      "Db": 1,
+      "D": 2,
+      "D#": 3,
+      "Eb": 3,
+      "E": 4,
+      "F": 5,
+      "F#": 6,
+      "Gb": 6,
+      "G": 7,
+      "G#": 8,
+      "Ab": 8,
+      "A": 9,
+      "A#": 10,
+      "Bb": 10,
+      "B": 11
+    };
+
+    function transposeNote(note, steps, preferFlat) {
+      if (!(note in noteMap)) {
+        return note;
+      }
+
+      const index = noteMap[note];
+      const newIndex = (index + steps + 120) % 12;
+
+      if (preferFlat) {
+        return flatNotes[newIndex];
+      } else {
+        return sharpNotes[newIndex];
+      }
+    }
+
+    function transposeChord(chord, steps, preferFlat) {
+      if (!chord) {
+        return chord;
+      }
+
+      // 處理斜線和弦，例如 G/B、D/F#
+      if (chord.includes("/")) {
+        const parts = chord.split("/");
+        const mainChord = parts[0];
+        const bassNote = parts[1];
+
+        return transposeChord(mainChord, steps, preferFlat) + "/" + transposeChord(bassNote, steps, preferFlat);
+      }
+
+      // 抓根音：A-G，可接 # 或 b
+      const match = chord.match(/^([A-G](?:#|b)?)(.*)$/);
+
+      if (!match) {
+        return chord;
+      }
+
+      const root = match[1];
+      const suffix = match[2];
+
+      const newRoot = transposeNote(root, steps, preferFlat);
+
+      return newRoot + suffix;
+    }
+
+    function transposeText(text, steps, preferFlat) {
+      /*
+        支援常見和弦：
+        C
+        Cm
+        C7
+        Cmaj7
+        Cmaj9
+        Cdim
+        Cdim7
+        Cm7b5
+        Caug
+        Csus4
+        Cadd9
+        G/B
+      */
+
+      const chordPattern = /\b[A-G](?:#|b)?(?:maj13|maj11|maj9|maj7|maj|min13|min11|min9|min7|min|m13|m11|m9|m7b5|m7|m6|m|dim7|dim|aug7|aug|sus2|sus4|sus|add9|add11|add13|7sus4|7sus2|13|11|9|7|6|5|4|2)?(?:\/[A-G](?:#|b)?)?\b/g;
+
+      return text.replace(chordPattern, function(chord) {
+        return transposeChord(chord, steps, preferFlat);
+      });
+    }
+
+    function convertChords() {
+      const inputBox = document.getElementById("inputChords");
+      const outputBox = document.getElementById("outputChords");
+      const stepSelect = document.getElementById("steps");
+
+      const input = inputBox.value.trim();
+      const steps = parseInt(stepSelect.value, 10);
+
+      const checkedRadio = document.querySelector('input[name="accidental"]:checked');
+      const accidental = checkedRadio ? checkedRadio.value : "sharp";
+      const preferFlat = accidental === "flat";
+
+      if (!input) {
+        alert("請先輸入和弦");
+        return;
+      }
+
+      const result = transposeText(input, steps, preferFlat);
+      outputBox.value = result;
+    }
+
+    function copyResult() {
+      const outputBox = document.getElementById("outputChords");
+      const output = outputBox.value;
+
+      if (!output.trim()) {
+        alert("目前沒有轉換結果");
+        return;
+      }
+
+      // 現代瀏覽器
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(output).then(function() {
+          alert("已複製結果");
+        }).catch(function() {
+          fallbackCopy(outputBox);
+        });
+      } else {
+        fallbackCopy(outputBox);
+      }
+    }
+
+    function fallbackCopy(outputBox) {
+      outputBox.removeAttribute("readonly");
+      outputBox.focus();
+      outputBox.select();
+      outputBox.setSelectionRange(0, outputBox.value.length);
+
+      try {
+        const successful = document.execCommand("copy");
+        if (successful) {
+          alert("已複製結果");
+        } else {
+          alert("複製失敗，請手動長按選取複製");
+        }
+      } catch (err) {
+        alert("複製失敗，請手動長按選取複製");
+      }
+
+      outputBox.setAttribute("readonly", true);
+    }
+
+    function clearAll() {
+      document.getElementById("inputChords").value = "";
+      document.getElementById("outputChords").value = "";
+    }
+
+    // iPhone / Safari 比較穩的按鈕事件綁定方式
+    document.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("convertBtn").addEventListener("click", convertChords);
+      document.getElementById("copyBtn").addEventListener("click", copyResult);
+      document.getElementById("clearBtn").addEventListener("click", clearAll);
+    });
+  </script>
+
+</body>
+</html>
