@@ -520,8 +520,7 @@
 
     <div class="tab-content" id="tabMetronome">
       <div class="desc">
-        可調整 BPM、拍號，支援開始 / 停止與 Tap Tempo。<br>
-        節拍器會依序播放 beat1.mp3、beat2.mp3、beat3.mp3、beat4.mp3。
+        可調整 BPM、拍號，支援開始 / 停止與 Tap Tempo。
       </div>
 
       <div class="metronome-card" id="metronomeCard">
@@ -572,7 +571,7 @@
         </div>
 
         <div class="note">
-          若手機沒有聲音，請確認媒體音量已開啟，並再次點擊「開始」。iPhone 靜音模式下通常仍可播放網頁音效，但不同瀏覽器或輸出裝置可能會有差異。
+          若手機沒有聲音，請確認媒體音量已開啟，並再次點擊「開始」。不同瀏覽器或輸出裝置可能會有差異。
         </div>
       </div>
     </div>
@@ -949,6 +948,7 @@
       document.getElementById("resultBox").innerHTML = "請輸入兩個調性後按「計算差幾個 Key」。";
     }
 
+    let metroAudioContext = null;
     let metroTimer = null;
     let metroIsRunning = false;
     let metroCurrentBeat = 0;
@@ -956,48 +956,46 @@
     let metroBeatsPerBar = 4;
     let tapTimes = [];
 
-    let beatSounds = [
-      new Audio("beat1.mp3"),
-      new Audio("beat2.mp3"),
-      new Audio("beat3.mp3"),
-      new Audio("beat4.mp3")
-    ];
+    function initMetroAudio() {
+      if (!metroAudioContext) {
+        metroAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
 
-    beatSounds.forEach(function(sound) {
-      sound.preload = "auto";
-      sound.volume = 1.0;
-    });
+      if (metroAudioContext.state === "suspended") {
+        return metroAudioContext.resume();
+      }
 
-    function unlockBeatSounds() {
-      beatSounds.forEach(function(sound) {
-        try {
-          sound.play().then(function() {
-            sound.pause();
-            sound.currentTime = 0;
-          }).catch(function() {});
-        } catch (err) {}
-      });
+      return Promise.resolve();
     }
 
-    function playClick() {
-      const soundIndex = metroCurrentBeat % beatSounds.length;
-      const sound = beatSounds[soundIndex];
+    function playClick(isAccent) {
+      initMetroAudio();
 
       if (navigator.vibrate) {
-        navigator.vibrate(metroCurrentBeat === 0 ? 80 : 35);
+        navigator.vibrate(isAccent ? 80 : 35);
       }
 
-      try {
-        sound.pause();
-        sound.currentTime = 0;
-        sound.play().catch(function() {
-          document.getElementById("metroStatus").textContent =
-            "聲音播放被瀏覽器擋住，請再按一次開始或確認音量。";
-        });
-      } catch (err) {
-        document.getElementById("metroStatus").textContent =
-          "聲音播放失敗，請確認 beat1.mp3 ~ beat4.mp3 是否已上傳。";
-      }
+      const oscillator = metroAudioContext.createOscillator();
+      const gainNode = metroAudioContext.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.value = isAccent ? 1200 : 850;
+
+      gainNode.gain.setValueAtTime(0.001, metroAudioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        isAccent ? 0.7 : 0.45,
+        metroAudioContext.currentTime + 0.002
+      );
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.001,
+        metroAudioContext.currentTime + 0.06
+      );
+
+      oscillator.connect(gainNode);
+      gainNode.connect(metroAudioContext.destination);
+
+      oscillator.start(metroAudioContext.currentTime);
+      oscillator.stop(metroAudioContext.currentTime + 0.07);
     }
 
     function flashMetronome(isAccent) {
@@ -1032,7 +1030,7 @@
     function metroTick() {
       const isAccent = metroCurrentBeat === 0;
 
-      playClick();
+      playClick(isAccent);
       flashMetronome(isAccent);
       updateBeatDots();
 
@@ -1047,17 +1045,17 @@
         return;
       }
 
-      unlockBeatSounds();
+      initMetroAudio().then(function() {
+        metroIsRunning = true;
+        metroCurrentBeat = 0;
 
-      metroIsRunning = true;
-      metroCurrentBeat = 0;
+        document.getElementById("startMetroBtn").textContent = "停止";
 
-      document.getElementById("startMetroBtn").textContent = "停止";
+        metroTick();
 
-      metroTick();
-
-      const interval = 60000 / metroBpm;
-      metroTimer = setInterval(metroTick, interval);
+        const interval = 60000 / metroBpm;
+        metroTimer = setInterval(metroTick, interval);
+      });
     }
 
     function stopMetronome() {
@@ -1068,15 +1066,9 @@
         metroTimer = null;
       }
 
-      beatSounds.forEach(function(sound) {
-        try {
-          sound.pause();
-          sound.currentTime = 0;
-        } catch (err) {}
-      });
-
       document.getElementById("startMetroBtn").textContent = "開始";
       document.getElementById("metroStatus").textContent = "已停止";
+
       metroCurrentBeat = 0;
       updateBeatDots();
     }
