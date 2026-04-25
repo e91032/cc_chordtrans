@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>和弦工具 by YaoCC</title>
+  <title>和弦工具 by 堯大</title>
 
   <style>
     body {
@@ -233,7 +233,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* 節拍器 */
     .metronome-card {
       margin-top: 18px;
       background: #f9fafb;
@@ -241,6 +240,17 @@
       border-radius: 18px;
       padding: 24px;
       text-align: center;
+      transition: 0.08s ease;
+    }
+
+    .metronome-card.flash {
+      box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.18);
+      transform: scale(1.01);
+    }
+
+    .metronome-card.flash-accent {
+      box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.22);
+      transform: scale(1.015);
     }
 
     .bpm-display {
@@ -402,7 +412,6 @@
       <button class="tab-btn" id="tabMetroBtn" type="button">節拍器</button>
     </div>
 
-    <!-- 頁籤 1：和弦升降 Key -->
     <div class="tab-content active" id="tabChord">
       <label for="inputChords">輸入原始和弦：</label>
       <textarea id="inputChords" placeholder="例如：C G Am F&#10;或：Cdim7 F#m7b5 G7sus4 Cmaj9"></textarea>
@@ -468,7 +477,6 @@
       </div>
     </div>
 
-    <!-- 頁籤 2：計算兩調差幾 Key -->
     <div class="tab-content" id="tabKey">
       <div class="desc">
         輸入兩個調性，工具會自動用「關係大小調」換算後，計算兩個調差幾個 Key。<br>
@@ -510,13 +518,13 @@
       </div>
     </div>
 
-    <!-- 頁籤 3：節拍器 -->
     <div class="tab-content" id="tabMetronome">
       <div class="desc">
-        可調整 BPM、拍號，支援開始 / 停止與 Tap Tempo。
+        可調整 BPM、拍號，支援開始 / 停止與 Tap Tempo。<br>
+        節拍器會依序播放 beat1.mp3、beat2.mp3、beat3.mp3、beat4.mp3。
       </div>
 
-      <div class="metronome-card">
+      <div class="metronome-card" id="metronomeCard">
         <div class="bpm-display">
           <span id="bpmValue">120</span>
           <span class="bpm-unit">BPM</span>
@@ -562,6 +570,10 @@
         <div class="metro-status" id="metroStatus">
           尚未開始
         </div>
+
+        <div class="note">
+          若手機沒有聲音，請確認媒體音量已開啟，並再次點擊「開始」。iPhone 靜音模式下通常仍可播放網頁音效，但不同瀏覽器或輸出裝置可能會有差異。
+        </div>
       </div>
     </div>
 
@@ -600,10 +612,6 @@
       "Bb": 10,
       "B": 11
     };
-
-    /* -------------------------
-       共用功能
-    ------------------------- */
 
     function noteName(index, preferFlat) {
       const safeIndex = ((index % 12) + 12) % 12;
@@ -672,10 +680,6 @@
       tabs[targetTab].content.classList.add("active");
       tabs[targetTab].button.classList.add("active");
     }
-
-    /* -------------------------
-       頁籤 1：和弦升降 Key
-    ------------------------- */
 
     function transposeNote(note, steps, preferFlat) {
       if (!(note in noteMap)) {
@@ -759,10 +763,6 @@
       document.getElementById("inputChords").value = "";
       document.getElementById("outputChords").value = "";
     }
-
-    /* -------------------------
-       頁籤 2：計算兩調差幾 Key
-    ------------------------- */
 
     function cleanInput(text) {
       return text
@@ -949,11 +949,6 @@
       document.getElementById("resultBox").innerHTML = "請輸入兩個調性後按「計算差幾個 Key」。";
     }
 
-    /* -------------------------
-       頁籤 3：節拍器
-    ------------------------- */
-
-    let metroAudioContext = null;
     let metroTimer = null;
     let metroIsRunning = false;
     let metroCurrentBeat = 0;
@@ -961,40 +956,61 @@
     let metroBeatsPerBar = 4;
     let tapTimes = [];
 
-    function initMetroAudio() {
-      if (!metroAudioContext) {
-        metroAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let beatSounds = [
+      new Audio("beat1.mp3"),
+      new Audio("beat2.mp3"),
+      new Audio("beat3.mp3"),
+      new Audio("beat4.mp3")
+    ];
+
+    beatSounds.forEach(function(sound) {
+      sound.preload = "auto";
+      sound.volume = 1.0;
+    });
+
+    function unlockBeatSounds() {
+      beatSounds.forEach(function(sound) {
+        try {
+          sound.play().then(function() {
+            sound.pause();
+            sound.currentTime = 0;
+          }).catch(function() {});
+        } catch (err) {}
+      });
+    }
+
+    function playClick() {
+      const soundIndex = metroCurrentBeat % beatSounds.length;
+      const sound = beatSounds[soundIndex];
+
+      if (navigator.vibrate) {
+        navigator.vibrate(metroCurrentBeat === 0 ? 80 : 35);
       }
 
-      if (metroAudioContext.state === "suspended") {
-        metroAudioContext.resume();
+      try {
+        sound.pause();
+        sound.currentTime = 0;
+        sound.play().catch(function() {
+          document.getElementById("metroStatus").textContent =
+            "聲音播放被瀏覽器擋住，請再按一次開始或確認音量。";
+        });
+      } catch (err) {
+        document.getElementById("metroStatus").textContent =
+          "聲音播放失敗，請確認 beat1.mp3 ~ beat4.mp3 是否已上傳。";
       }
     }
 
-    function playClick(isAccent) {
-      initMetroAudio();
+    function flashMetronome(isAccent) {
+      const card = document.getElementById("metronomeCard");
 
-      const oscillator = metroAudioContext.createOscillator();
-      const gainNode = metroAudioContext.createGain();
+      card.classList.remove("flash", "flash-accent");
+      void card.offsetWidth;
 
-      oscillator.type = "sine";
-      oscillator.frequency.value = isAccent ? 1200 : 850;
+      card.classList.add(isAccent ? "flash-accent" : "flash");
 
-      gainNode.gain.setValueAtTime(0.001, metroAudioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(
-        isAccent ? 0.7 : 0.45,
-        metroAudioContext.currentTime + 0.002
-      );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        metroAudioContext.currentTime + 0.06
-      );
-
-      oscillator.connect(gainNode);
-      gainNode.connect(metroAudioContext.destination);
-
-      oscillator.start(metroAudioContext.currentTime);
-      oscillator.stop(metroAudioContext.currentTime + 0.07);
+      setTimeout(function() {
+        card.classList.remove("flash", "flash-accent");
+      }, 90);
     }
 
     function updateBeatDots() {
@@ -1016,7 +1032,8 @@
     function metroTick() {
       const isAccent = metroCurrentBeat === 0;
 
-      playClick(isAccent);
+      playClick();
+      flashMetronome(isAccent);
       updateBeatDots();
 
       document.getElementById("metroStatus").textContent =
@@ -1030,7 +1047,7 @@
         return;
       }
 
-      initMetroAudio();
+      unlockBeatSounds();
 
       metroIsRunning = true;
       metroCurrentBeat = 0;
@@ -1050,6 +1067,13 @@
         clearInterval(metroTimer);
         metroTimer = null;
       }
+
+      beatSounds.forEach(function(sound) {
+        try {
+          sound.pause();
+          sound.currentTime = 0;
+        } catch (err) {}
+      });
 
       document.getElementById("startMetroBtn").textContent = "開始";
       document.getElementById("metroStatus").textContent = "已停止";
@@ -1130,10 +1154,6 @@
       tapTimes = [];
       document.getElementById("metroStatus").textContent = "Tap 已重置";
     }
-
-    /* -------------------------
-       事件綁定
-    ------------------------- */
 
     document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("tabChordBtn").addEventListener("click", function() {
