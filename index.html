@@ -94,7 +94,7 @@
       resize: vertical;
     }
 
-    textarea:focus, input:focus {
+    textarea:focus, input:focus, select:focus {
       outline: none;
       border-color: #2563eb;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
@@ -233,6 +233,94 @@
       letter-spacing: 0.5px;
     }
 
+    /* 節拍器 */
+    .metronome-card {
+      margin-top: 18px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .bpm-display {
+      font-size: 56px;
+      font-weight: bold;
+      color: #2563eb;
+      line-height: 1;
+      margin-bottom: 18px;
+    }
+
+    .bpm-unit {
+      font-size: 20px;
+      color: #666;
+      margin-left: 6px;
+    }
+
+    #bpmRange {
+      width: 100%;
+      margin: 10px 0 22px;
+      padding: 0;
+      box-shadow: none;
+    }
+
+    .metro-controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+
+    .metro-controls button {
+      min-width: 110px;
+    }
+
+    .metro-row {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .metro-row label {
+      margin: 0;
+    }
+
+    .beat-dots {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .beat-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #d1d5db;
+      display: inline-block;
+      transition: 0.08s ease;
+    }
+
+    .beat-dot.active {
+      background: #2563eb;
+      transform: scale(1.25);
+    }
+
+    .beat-dot.accent {
+      background: #ef4444;
+      transform: scale(1.35);
+    }
+
+    .metro-status {
+      margin-top: 18px;
+      color: #666;
+      font-size: 15px;
+    }
+
     @media (max-width: 640px) {
       body {
         padding: 12px;
@@ -281,6 +369,24 @@
       .result {
         font-size: 17px;
       }
+
+      .bpm-display {
+        font-size: 48px;
+      }
+
+      .metro-controls {
+        flex-direction: row;
+      }
+
+      .metro-controls button {
+        width: auto;
+        flex: 1;
+        min-width: 88px;
+      }
+
+      .metro-row {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -293,6 +399,7 @@
     <div class="tabs">
       <button class="tab-btn active" id="tabChordBtn" type="button">和弦升降 Key</button>
       <button class="tab-btn" id="tabKeyBtn" type="button">計算兩調差幾 Key</button>
+      <button class="tab-btn" id="tabMetroBtn" type="button">節拍器</button>
     </div>
 
     <!-- 頁籤 1：和弦升降 Key -->
@@ -403,8 +510,63 @@
       </div>
     </div>
 
+    <!-- 頁籤 3：節拍器 -->
+    <div class="tab-content" id="tabMetronome">
+      <div class="desc">
+        可調整 BPM、拍號，支援開始 / 停止與 Tap Tempo。
+      </div>
+
+      <div class="metronome-card">
+        <div class="bpm-display">
+          <span id="bpmValue">120</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+
+        <input
+          id="bpmRange"
+          type="range"
+          min="40"
+          max="240"
+          value="120"
+          step="1"
+        >
+
+        <div class="metro-controls">
+          <button id="bpmDownBtn" type="button">－</button>
+          <button id="startMetroBtn" type="button">開始</button>
+          <button id="bpmUpBtn" type="button">＋</button>
+        </div>
+
+        <div class="metro-controls">
+          <button id="tapTempoBtn" class="secondary" type="button">Tap Tempo</button>
+          <button id="resetTapBtn" class="clear" type="button">重置 Tap</button>
+        </div>
+
+        <div class="metro-row">
+          <label for="beatsPerBar">拍號：</label>
+          <select id="beatsPerBar">
+            <option value="2">2/4</option>
+            <option value="3">3/4</option>
+            <option value="4" selected>4/4</option>
+            <option value="6">6/8</option>
+          </select>
+        </div>
+
+        <div class="beat-dots" id="beatDots">
+          <span class="beat-dot accent"></span>
+          <span class="beat-dot"></span>
+          <span class="beat-dot"></span>
+          <span class="beat-dot"></span>
+        </div>
+
+        <div class="metro-status" id="metroStatus">
+          尚未開始
+        </div>
+      </div>
+    </div>
+
     <div class="footer">
-      網站 by YaoCC
+      網站 by 堯大
     </div>
   </div>
 
@@ -487,24 +649,28 @@
     }
 
     function switchTab(targetTab) {
-      const tabChord = document.getElementById("tabChord");
-      const tabKey = document.getElementById("tabKey");
-      const tabChordBtn = document.getElementById("tabChordBtn");
-      const tabKeyBtn = document.getElementById("tabKeyBtn");
+      const tabs = {
+        chord: {
+          content: document.getElementById("tabChord"),
+          button: document.getElementById("tabChordBtn")
+        },
+        key: {
+          content: document.getElementById("tabKey"),
+          button: document.getElementById("tabKeyBtn")
+        },
+        metro: {
+          content: document.getElementById("tabMetronome"),
+          button: document.getElementById("tabMetroBtn")
+        }
+      };
 
-      if (targetTab === "chord") {
-        tabChord.classList.add("active");
-        tabKey.classList.remove("active");
+      Object.keys(tabs).forEach(function(name) {
+        tabs[name].content.classList.remove("active");
+        tabs[name].button.classList.remove("active");
+      });
 
-        tabChordBtn.classList.add("active");
-        tabKeyBtn.classList.remove("active");
-      } else {
-        tabKey.classList.add("active");
-        tabChord.classList.remove("active");
-
-        tabKeyBtn.classList.add("active");
-        tabChordBtn.classList.remove("active");
-      }
+      tabs[targetTab].content.classList.add("active");
+      tabs[targetTab].button.classList.add("active");
     }
 
     /* -------------------------
@@ -784,6 +950,188 @@
     }
 
     /* -------------------------
+       頁籤 3：節拍器
+    ------------------------- */
+
+    let metroAudioContext = null;
+    let metroTimer = null;
+    let metroIsRunning = false;
+    let metroCurrentBeat = 0;
+    let metroBpm = 120;
+    let metroBeatsPerBar = 4;
+    let tapTimes = [];
+
+    function initMetroAudio() {
+      if (!metroAudioContext) {
+        metroAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      if (metroAudioContext.state === "suspended") {
+        metroAudioContext.resume();
+      }
+    }
+
+    function playClick(isAccent) {
+      initMetroAudio();
+
+      const oscillator = metroAudioContext.createOscillator();
+      const gainNode = metroAudioContext.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.value = isAccent ? 1200 : 850;
+
+      gainNode.gain.setValueAtTime(0.001, metroAudioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        isAccent ? 0.7 : 0.45,
+        metroAudioContext.currentTime + 0.002
+      );
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.001,
+        metroAudioContext.currentTime + 0.06
+      );
+
+      oscillator.connect(gainNode);
+      gainNode.connect(metroAudioContext.destination);
+
+      oscillator.start(metroAudioContext.currentTime);
+      oscillator.stop(metroAudioContext.currentTime + 0.07);
+    }
+
+    function updateBeatDots() {
+      const beatDots = document.getElementById("beatDots");
+      beatDots.innerHTML = "";
+
+      for (let i = 0; i < metroBeatsPerBar; i++) {
+        const dot = document.createElement("span");
+        dot.className = "beat-dot";
+
+        if (i === metroCurrentBeat) {
+          dot.classList.add(i === 0 ? "accent" : "active");
+        }
+
+        beatDots.appendChild(dot);
+      }
+    }
+
+    function metroTick() {
+      const isAccent = metroCurrentBeat === 0;
+
+      playClick(isAccent);
+      updateBeatDots();
+
+      document.getElementById("metroStatus").textContent =
+        `第 ${metroCurrentBeat + 1} 拍 / 共 ${metroBeatsPerBar} 拍`;
+
+      metroCurrentBeat = (metroCurrentBeat + 1) % metroBeatsPerBar;
+    }
+
+    function startMetronome() {
+      if (metroIsRunning) {
+        return;
+      }
+
+      initMetroAudio();
+
+      metroIsRunning = true;
+      metroCurrentBeat = 0;
+
+      document.getElementById("startMetroBtn").textContent = "停止";
+
+      metroTick();
+
+      const interval = 60000 / metroBpm;
+      metroTimer = setInterval(metroTick, interval);
+    }
+
+    function stopMetronome() {
+      metroIsRunning = false;
+
+      if (metroTimer) {
+        clearInterval(metroTimer);
+        metroTimer = null;
+      }
+
+      document.getElementById("startMetroBtn").textContent = "開始";
+      document.getElementById("metroStatus").textContent = "已停止";
+      metroCurrentBeat = 0;
+      updateBeatDots();
+    }
+
+    function toggleMetronome() {
+      if (metroIsRunning) {
+        stopMetronome();
+      } else {
+        startMetronome();
+      }
+    }
+
+    function setBpm(value) {
+      metroBpm = Math.max(40, Math.min(240, parseInt(value, 10) || 120));
+
+      document.getElementById("bpmValue").textContent = metroBpm;
+      document.getElementById("bpmRange").value = metroBpm;
+
+      if (metroIsRunning) {
+        stopMetronome();
+        startMetronome();
+      }
+    }
+
+    function changeBpm(delta) {
+      setBpm(metroBpm + delta);
+    }
+
+    function updateBeatsPerBar(value) {
+      metroBeatsPerBar = parseInt(value, 10) || 4;
+      metroCurrentBeat = 0;
+      updateBeatDots();
+
+      if (metroIsRunning) {
+        stopMetronome();
+        startMetronome();
+      }
+    }
+
+    function tapTempo() {
+      const now = Date.now();
+
+      tapTimes.push(now);
+
+      if (tapTimes.length > 5) {
+        tapTimes.shift();
+      }
+
+      if (tapTimes.length >= 2) {
+        const intervals = [];
+
+        for (let i = 1; i < tapTimes.length; i++) {
+          intervals.push(tapTimes[i] - tapTimes[i - 1]);
+        }
+
+        const average =
+          intervals.reduce((sum, value) => sum + value, 0) / intervals.length;
+
+        const tappedBpm = Math.round(60000 / average);
+
+        if (tappedBpm >= 40 && tappedBpm <= 240) {
+          setBpm(tappedBpm);
+          document.getElementById("metroStatus").textContent =
+            `Tap Tempo：${tappedBpm} BPM`;
+        } else {
+          document.getElementById("metroStatus").textContent =
+            "Tap Tempo 超出範圍，請維持 40–240 BPM";
+        }
+      } else {
+        document.getElementById("metroStatus").textContent = "繼續點 Tap Tempo";
+      }
+    }
+
+    function resetTapTempo() {
+      tapTimes = [];
+      document.getElementById("metroStatus").textContent = "Tap 已重置";
+    }
+
+    /* -------------------------
        事件綁定
     ------------------------- */
 
@@ -794,6 +1142,10 @@
 
       document.getElementById("tabKeyBtn").addEventListener("click", function() {
         switchTab("key");
+      });
+
+      document.getElementById("tabMetroBtn").addEventListener("click", function() {
+        switchTab("metro");
       });
 
       document.getElementById("convertBtn").addEventListener("click", convertChords);
@@ -815,6 +1167,29 @@
           calculateKeyDistance();
         }
       });
+
+      document.getElementById("startMetroBtn").addEventListener("click", toggleMetronome);
+
+      document.getElementById("bpmDownBtn").addEventListener("click", function() {
+        changeBpm(-1);
+      });
+
+      document.getElementById("bpmUpBtn").addEventListener("click", function() {
+        changeBpm(1);
+      });
+
+      document.getElementById("bpmRange").addEventListener("input", function(e) {
+        setBpm(e.target.value);
+      });
+
+      document.getElementById("beatsPerBar").addEventListener("change", function(e) {
+        updateBeatsPerBar(e.target.value);
+      });
+
+      document.getElementById("tapTempoBtn").addEventListener("click", tapTempo);
+      document.getElementById("resetTapBtn").addEventListener("click", resetTapTempo);
+
+      updateBeatDots();
     });
   </script>
 
